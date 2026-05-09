@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Eid Night Short Pitch Scorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=Orbitron:wght@600;800;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none}
+  html,body{height:100%;overflow:hidden;background:#05060a;color:#fff;font-family:'Rajdhani','Hind Siliguri',sans-serif}
+  :root{
+    --neon:#00ffe1;--neon2:#ff00d4;--gold:#ffcb05;--red:#ff2244;--green:#00ff88;
+    --bg:#05060a;--glass:rgba(255,255,255,.06);--border:rgba(255,255,255,.12);
+  }
+  body{
+    background:
+      radial-gradient(circle at 20% 10%, rgba(0,255,225,.15), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(255,0,212,.15), transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(255,203,5,.08), transparent 60%),
+      linear-gradient(160deg,#05060a,#0a0d18 60%,#050609);
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:40px 40px;mask-image:radial-gradient(circle at center,black 30%,transparent 75%);
+    z-index:0;
+  }
+
+  /* LOADING */
+  #loader{position:fixed;inset:0;background:#05060a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .6s,visibility .6s}
+  #loader.hide{opacity:0;visibility:hidden}
+  .ball{width:60px;height:60px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#ff5566,#8a0010);box-shadow:0 0 40px rgba(255,40,60,.7);animation:bounce 1s infinite ease-in-out;position:relative}
+  .ball::after{content:"";position:absolute;inset:8px;border:2px dashed rgba(255,255,255,.5);border-radius:50%}
+  @keyframes bounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-30px) scale(1.05)}}
+  #loader h1{margin-top:24px;font-family:'Orbitron';font-weight:900;font-size:22px;letter-spacing:3px;background:linear-gradient(90deg,var(--neon),var(--gold),var(--neon2));-webkit-background-clip:text;background-clip:text;color:transparent;text-align:center}
+  #loader p{margin-top:6px;font-family:'Hind Siliguri';color:#7a849a;font-size:13px}
+
+  /* APP */
+  #app{position:relative;height:100dvh;display:flex;flex-direction:column;z-index:1}
+
+  /* TOPBAR */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;backdrop-filter:blur(10px);background:rgba(8,10,18,.55);border-bottom:1px solid var(--border);position:relative;z-index:5}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--neon),var(--neon2));display:grid;place-items:center;box-shadow:0 0 18px rgba(0,255,225,.45);font-family:'Orbitron';font-weight:900;color:#000}
+  .brand .name{font-family:'Orbitron';font-weight:800;font-size:13px;letter-spacing:2px;background:linear-gradient(90deg,#fff,#9ad);background-clip:text;-webkit-background-clip:text;color:transparent}
+  .brand .sub{font-size:10px;color:#7a849a;font-family:'Hind Siliguri'}
+  .top-actions{display:flex;gap:8px}
+  .icon-btn{width:38px;height:38px;border-radius:10px;background:var(--glass);border:1px solid var(--border);display:grid;place-items:center;color:#cfd6e4;cursor:pointer;transition:.2s}
+  .icon-btn:hover{color:var(--neon);border-color:var(--neon);box-shadow:0 0 12px rgba(0,255,225,.4)}
+  .icon-btn svg{width:18px;height:18px}
+
+  /* SCOREBOARD */
+  .board-wrap{flex:1;display:flex;flex-direction:column;padding:10px 12px;gap:10px;min-height:0}
+  .meta-row{display:flex;justify-content:space-between;align-items:center;font-family:'Hind Siliguri';font-size:11px;color:#8a93a8;letter-spacing:1px;text-transform:uppercase}
+  .meta-row .live{display:flex;align-items:center;gap:6px;color:var(--red);font-weight:700}
+  .live .dot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red);animation:pulse 1.2s infinite}
+  @keyframes pulse{50%{opacity:.3}}
+
+  .scoreboard{
+    flex:1;border-radius:18px;border:1px solid var(--border);
+    background:linear-gradient(180deg,rgba(15,20,35,.85),rgba(8,10,18,.85));
+    box-shadow:inset 0 0 40px rgba(0,255,225,.05),0 12px 40px rgba(0,0,0,.5);
+    padding:14px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;min-height:0
+  }
+  .scoreboard::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% -20%,rgba(0,255,225,.18),transparent 60%);pointer-events:none}
+  .teams{display:flex;justify-content:space-between;align-items:center;gap:10px;position:relative;z-index:1}
+  .team{flex:1;text-align:center}
+  .team .badge{font-size:10px;color:#7a849a;letter-spacing:2px;font-family:'Orbitron'}
+  .team .nm{font-family:'Orbitron';font-weight:800;font-size:18px;color:#fff;text-shadow:0 0 12px rgba(0,255,225,.4);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vs{font-family:'Orbitron';font-weight:900;color:var(--gold);font-size:16px;text-shadow:0 0 10px rgba(255,203,5,.6)}
+
+  .score-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;z-index:1;gap:6px;min-height:0}
+  .score-led{
+    font-family:'Orbitron';font-weight:900;
+    font-size:clamp(64px,18vw,140px);line-height:1;
+    background:linear-gradient(180deg,#fff,#7af3ff 50%,#00d8c0);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 30px rgba(0,255,225,.35);letter-spacing:2px;
+    transition:transform .25s
+  }
+  .score-led.bump{transform:scale(1.08)}
+  .score-sub{display:flex;gap:14px;font-family:'Orbitron';font-size:14px;color:#cfd6e4;letter-spacing:2px}
+  .score-sub b{color:var(--gold);text-shadow:0 0 8px rgba(255,203,5,.5)}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;position:relative;z-index:1}
+  .stat{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:8px 6px;text-align:center;backdrop-filter:blur(6px)}
+  .stat .l{font-size:9px;color:#7a849a;letter-spacing:1.5px;font-family:'Orbitron'}
+  .stat .v{font-family:'Orbitron';font-weight:800;font-size:18px;margin-top:2px;color:#fff}
+  .stat.req .v{color:var(--neon)}
+  .stat.balls .v{color:var(--gold)}
+
+  .status-bar{position:relative;z-index:1;text-align:center;font-family:'Hind Siliguri';font-size:13px;color:#cfd6e4;background:rgba(0,0,0,.25);border:1px solid var(--border);padding:6px 10px;border-radius:10px;min-height:30px}
+  .status-bar.win{background:linear-gradient(90deg,rgba(0,255,136,.15),rgba(255,203,5,.15));border-color:var(--green);color:var(--green);font-weight:700;text-shadow:0 0 8px rgba(0,255,136,.6)}
+  .status-bar.lose{background:linear-gradient(90deg,rgba(255,34,68,.15),rgba(255,0,212,.15));border-color:var(--red);color:#ffb8c2}
+
+  .recent{position:relative;z-index:1;display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap;min-height:30px}
+  .recent .lbl{font-size:10px;color:#7a849a;letter-spacing:1.5px;font-family:'Orbitron';margin-right:4px}
+  .pill{min-width:28px;height:28px;padding:0 8px;border-radius:50px;display:grid;place-items:center;font-family:'Orbitron';font-weight:800;font-size:12px;background:rgba(255,255,255,.08);border:1px solid var(--border);color:#cfd6e4;animation:pop .3s}
+  .pill.r4{background:rgba(0,255,225,.2);color:var(--neon);border-color:var(--neon);box-shadow:0 0 10px rgba(0,255,225,.5)}
+  .pill.r6,.pill.r5{background:rgba(255,203,5,.2);color:var(--gold);border-color:var(--gold);box-shadow:0 0 10px rgba(255,203,5,.5)}
+  .pill.W{background:rgba(255,34,68,.25);color:#ffb8c2;border-color:var(--red);box-shadow:0 0 10px rgba(255,34,68,.6)}
+  .pill.WD,.pill.NB{background:rgba(255,0,212,.2);color:#ffb8e7;border-color:var(--neon2)}
+  @keyframes pop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+
+  /* CONTROLS */
+  .controls{padding:8px 12px 14px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.45));border-top:1px solid var(--border)}
+  .ctrl-head{display:flex;justify-content:space-between;align-items:center;font-family:'Orbitron';font-size:10px;letter-spacing:2px;color:#7a849a}
+  .ctrl-head .who{color:var(--neon)}
+  .grid-runs{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+  .grid-extras{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .grid-balls{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+  .grid-sys{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+  .btn{
+    padding:12px 4px;border-radius:12px;border:1px solid var(--border);
+    background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+    color:#fff;font-family:'Orbitron';font-weight:800;font-size:14px;letter-spacing:1px;
+    cursor:pointer;transition:transform .1s,box-shadow .2s,border-color .2s;
+    backdrop-filter:blur(6px)
+  }
+  .btn:active{transform:scale(.94)}
+  .btn.run{border-color:rgba(0,255,225,.35)}
+  .btn.run:hover{box-shadow:0 0 14px rgba(0,255,225,.4);border-color:var(--neon)}
+  .btn.r4{background:linear-gradient(180deg,rgba(0,255,225,.25),rgba(0,255,225,.05));color:var(--neon);border-color:var(--neon)}
+  .btn.r5{background:linear-gradient(180deg,rgba(255,203,5,.25),rgba(255,203,5,.05));color:var(--gold);border-color:var(--gold)}
+  .btn.out{background:linear-gradient(180deg,rgba(255,34,68,.35),rgba(255,34,68,.08));color:#fff;border-color:var(--red);box-shadow:0 0 12px rgba(255,34,68,.3)}
+  .btn.wide,.btn.nb{background:linear-gradient(180deg,rgba(255,0,212,.25),rgba(255,0,212,.05));color:#ffb8e7;border-color:var(--neon2);font-size:12px}
+  .btn.ball,.btn.over{background:linear-gradient(180deg,rgba(255,203,5,.2),rgba(255,203,5,.04));color:var(--gold);border-color:var(--gold);font-size:12px}
+  .btn.undo{background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.02));font-size:12px}
+  .btn.reset{background:linear-gradient(180deg,rgba(255,34,68,.2),rgba(255,34,68,.04));color:#ffb8c2;border-color:rgba(255,34,68,.5);font-size:12px}
+  .btn.setup{background:linear-gradient(180deg,rgba(0,255,225,.18),rgba(255,0,212,.08));color:#fff;border-color:var(--neon);font-size:12px}
+
+  /* VIEWER NOTE */
+  .viewer-note{padding:10px 14px;text-align:center;font-family:'Hind Siliguri';font-size:11px;color:#7a849a;border-top:1px solid var(--border);background:rgba(0,0,0,.3)}
+  .viewer-note b{color:var(--neon);cursor:pointer}
+
+  /* MODAL */
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);z-index:100;display:none;align-items:center;justify-content:center;padding:18px}
+  .modal.show{display:flex;animation:fade .25s}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .sheet{
+    width:100%;max-width:420px;background:linear-gradient(180deg,#0d1220,#070912);
+    border:1px solid var(--border);border-radius:18px;padding:18px;
+    box-shadow:0 0 40px rgba(0,255,225,.15);max-height:90dvh;overflow:auto
+  }
+  .sheet h2{font-family:'Orbitron';font-size:16px;letter-spacing:2px;background:linear-gradient(90deg,var(--neon),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:14px;text-align:center}
+  .field{margin-bottom:10px}
+  .field label{display:block;font-size:11px;color:#8a93a8;font-family:'Orbitron';letter-spacing:1.5px;margin-bottom:5px}
+  .field input,.field select{width:100%;padding:11px 12px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:#fff;font-family:'Rajdhani';font-size:15px;font-weight:600;outline:none;transition:.2s}
+  .field input:focus{border-color:var(--neon);box-shadow:0 0 10px rgba(0,255,225,.3)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .modal .btn{width:100%;padding:13px;margin-top:6px}
+  .modal .btn.primary{background:linear-gradient(90deg,var(--neon),var(--neon2));color:#000;border:none}
+  .close-x{position:absolute;top:12px;right:12px;color:#8a93a8;cursor:pointer;font-size:22px}
+  .sheet-wrap{position:relative}
+  .err{color:var(--red);font-size:12px;margin-top:6px;text-align:center;font-family:'Hind Siliguri';min-height:16px}
+
+  /* HISTORY */
+  .hist-item{padding:8px 10px;border-bottom:1px solid var(--border);font-family:'Hind Siliguri';font-size:13px;color:#cfd6e4;display:flex;justify-content:space-between}
+  .hist-item:last-child{border:none}
+  .hist-item .t{color:#7a849a;font-size:11px}
+
+  /* FX */
+  .fx-flash{position:fixed;inset:0;background:rgba(0,255,225,.4);z-index:50;pointer-events:none;animation:flash .5s}
+  .fx-flash.gold{background:rgba(255,203,5,.45)}
+  .fx-flash.red{background:rgba(255,34,68,.5);animation:redflash 1.2s}
+  @keyframes flash{0%{opacity:0}30%{opacity:1}100%{opacity:0}}
+  @keyframes redflash{0%,100%{opacity:0}20%,60%{opacity:1}40%,80%{opacity:.3}}
+  .toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid var(--neon);color:var(--neon);padding:10px 18px;border-radius:50px;font-family:'Orbitron';font-size:12px;letter-spacing:2px;z-index:200;animation:toast 1.8s forwards;box-shadow:0 0 20px rgba(0,255,225,.4)}
+  @keyframes toast{0%{opacity:0;transform:translate(-50%,-20px)}15%,75%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-10px)}}
+  .toast.gold{border-color:var(--gold);color:var(--gold);box-shadow:0 0 20px rgba(255,203,5,.5)}
+  .toast.red{border-color:var(--red);color:#ffb8c2;box-shadow:0 0 20px rgba(255,34,68,.5)}
+
+  .win-pop{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;padding:30px;text-align:center}
+  .win-pop.show{display:flex;animation:fade .4s}
+  .win-pop .trophy{font-size:80px;animation:bounce 1s infinite}
+  .win-pop h1{font-family:'Orbitron';font-weight:900;font-size:32px;background:linear-gradient(90deg,var(--gold),var(--neon),var(--neon2));-webkit-background-clip:text;background-clip:text;color:transparent;margin:14px 0;letter-spacing:2px}
+  .win-pop p{font-family:'Hind Siliguri';color:#cfd6e4;font-size:16px;margin-bottom:22px}
+  .win-pop button{padding:14px 30px;border-radius:50px;background:linear-gradient(90deg,var(--neon),var(--neon2));color:#000;border:none;font-family:'Orbitron';font-weight:800;font-size:14px;letter-spacing:2px;cursor:pointer}
+
+  @media (orientation:landscape) and (max-height:500px){
+    .stats{grid-template-columns:repeat(4,1fr)}
+    .score-led{font-size:clamp(50px,12vw,90px)}
+    .grid-runs{grid-template-columns:repeat(7,1fr)}
+  }
+
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="ball"></div>
+  <h1>EID NIGHT SHORT PITCH</h1>
+  <p>Premium Live Scoreboard Loading...</p>
+</div>
+
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">EN</div>
+      <div>
+        <div class="name">EID NIGHT SCORER</div>
+        <div class="sub" id="tournamentName">Short Pitch Cricket Cup</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="histBtn" title="History">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+      </button>
+      <button class="icon-btn" id="fsBtn" title="Fullscreen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6"/></svg>
+      </button>
+      <button class="icon-btn" id="adminBtn" title="Admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCOREBOARD -->
+  <div class="board-wrap">
+    <div class="meta-row">
+      <span id="tossInfo">Toss: —</span>
+      <span class="live"><span class="dot"></span> LIVE</span>
+    </div>
+
+    <div class="scoreboard">
+      <div class="teams">
+        <div class="team">
+          <div class="badge">BATTING</div>
+          <div class="nm" id="battingTeam">Team A</div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="team">
+          <div class="badge">BOWLING</div>
+          <div class="nm" id="bowlingTeam">Team B</div>
+        </div>
+      </div>
+
+      <div class="score-main">
+        <div class="score-led" id="scoreLed">0/0</div>
+        <div class="score-sub">OVERS <b id="oversLed">0.0</b></div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="l">TARGET</div><div class="v" id="statTarget">—</div></div>
+        <div class="stat req"><div class="l">REQ RUNS</div><div class="v" id="statReq">—</div></div>
+        <div class="stat balls"><div class="l">REQ BALLS</div><div class="v" id="statReqBalls">—</div></div>
+        <div class="stat"><div class="l">RR</div><div class="v" id="statRR">0.0</div></div>
+      </div>
+
+      <div class="recent" id="recentBalls">
+        <span class="lbl">RECENT</span>
+      </div>
+
+      <div class="status-bar" id="statusBar">Match not started — Admin can setup match</div>
+    </div>
+  </div>
+
+  <!-- ADMIN CONTROLS -->
+  <div class="controls hidden" id="controls">
+    <div class="ctrl-head">
+      <span>SCORING CONTROLS</span>
+      <span class="who">ADMIN MODE</span>
+    </div>
+    <div class="grid-runs">
+      <button class="btn run" data-run="0">0</button>
+      <button class="btn run" data-run="1">1</button>
+      <button class="btn run" data-run="2">2</button>
+      <button class="btn run" data-run="3">3</button>
+      <button class="btn r4" data-run="4">4</button>
+      <button class="btn r5" data-run="5">5</button>
+    </div>
+    <div class="grid-extras">
+      <button class="btn out" id="btnOut">OUT</button>
+      <button class="btn wide" id="btnWide">WIDE</button>
+      <button class="btn nb" id="btnNB">NO BALL</button>
+    </div>
+    <div class="grid-balls">
+      <button class="btn ball" id="btnBall">+ BALL</button>
+      <button class="btn over" id="btnOver">+ OVER</button>
+    </div>
+    <div class="grid-sys">
+      <button class="btn undo" id="btnUndo">↶ UNDO</button>
+      <button class="btn setup" id="btnSetup">⚙ SETUP</button>
+    </div>
+    <button class="btn reset" id="btnReset">⟲ RESET MATCH</button>
+  </div>
+
+  <div class="viewer-note" id="viewerNote">
+    👁️ Viewer Mode — <b id="loginHint">Tap lock icon to login as admin</b>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal" id="loginModal">
+  <div class="sheet sheet-wrap">
+    <span class="close-x" data-close="loginModal">×</span>
+    <h2>🔒 ADMIN LOGIN</h2>
+    <div class="field"><label>USERNAME</label><input id="loginUser" placeholder="admin" autocomplete="off"></div>
+    <div class="field"><label>PASSWORD</label><input id="loginPass" type="password" placeholder="••••" autocomplete="off"></div>
+    <div class="err" id="loginErr"></div>
+    <button class="btn primary" id="doLogin">LOGIN</button>
+    <button class="btn" id="doLogout" style="margin-top:8px;display:none">LOGOUT</button>
+  </div>
+</div>
+
+<!-- SETUP MODAL -->
+<div class="modal" id="setupModal">
+  <div class="sheet sheet-wrap">
+    <span class="close-x" data-close="setupModal">×</span>
+    <h2>⚙ MATCH SETUP</h2>
+    <div class="field"><label>TOURNAMENT</label><input id="inTour" placeholder="Eid Night Cup 2026"></div>
+    <div class="row2">
+      <div class="field"><label>TEAM 1</label><input id="inT1" placeholder="Team A"></div>
+      <div class="field"><label>TEAM 2</label><input id="inT2" placeholder="Team B"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>BATTING NOW</label>
+        <select id="inBat"><option value="1">Team 1</option><option value="2">Team 2</option></select>
+      </div>
+      <div class="field"><label>TOSS WON BY</label>
+        <select id="inToss"><option value="1">Team 1</option><option value="2">Team 2</option></select>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>TARGET RUNS</label><input id="inTarget" type="number" min="0" placeholder="0 = no target"></div>
+      <div class="field"><label>TOTAL OVERS</label><input id="inOvers" type="number" min="1" placeholder="6"></div>
+    </div>
+    <button class="btn primary" id="doSetup">START MATCH</button>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="modal" id="histModal">
+  <div class="sheet sheet-wrap">
+    <span class="close-x" data-close="histModal">×</span>
+    <h2>📜 MATCH HISTORY</h2>
+    <div id="histList"><div class="hist-item"><span>No history yet</span></div></div>
+    <button class="btn" id="clearHist" style="margin-top:10px">CLEAR HISTORY</button>
+  </div>
+</div>
+
+<!-- WIN POPUP -->
+<div class="win-pop" id="winPop">
+  <div class="trophy">🏆</div>
+  <h1 id="winTitle">TEAM A WINS!</h1>
+  <p id="winMsg">Won by 5 wickets</p>
+  <button id="winClose">CONTINUE</button>
+</div>
+
+<script>
+/* ---------- SOUND (WebAudio + SpeechSynthesis) ---------- */
+let audioCtx;
+function ac(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
+function tone(freq,dur,type='sine',vol=.2,when=0){
+  try{
+    const c=ac(),o=c.createOscillator(),g=c.createGain();
+    o.type=type;o.frequency.value=freq;o.connect(g);g.connect(c.destination);
+    const t=c.currentTime+when;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.01);
+    g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.start(t);o.stop(t+dur+.05);
+  }catch(e){}
+}
+function noiseBurst(dur=.5,vol=.15){
+  try{
+    const c=ac(),buf=c.createBuffer(1,c.sampleRate*dur,c.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length);
+    const s=c.createBufferSource();s.buffer=buf;
+    const g=c.createGain();g.gain.value=vol;
+    const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=800;
+    s.connect(f);f.connect(g);g.connect(c.destination);
+    s.start();
+  }catch(e){}
+}
+function speak(txt,opts={}){
+  try{
+    if(!('speechSynthesis' in window))return;
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(txt);
+    u.rate=opts.rate||1;u.pitch=opts.pitch||1;u.volume=opts.volume||1;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function vibe(p){ if(navigator.vibrate) navigator.vibrate(p); }
+
+function sfx(type){
+  switch(type){
+    case 'run0': tone(220,.1,'square',.15); speak('Dot ball'); vibe(20); break;
+    case 'run1': tone(440,.12,'triangle'); speak('One run'); vibe(30); break;
+    case 'run2': tone(523,.14,'triangle'); speak('Two runs'); vibe(35); break;
+    case 'run3': tone(587,.16,'triangle'); speak('Three runs'); vibe(40); break;
+    case 'run4':
+      tone(659,.2,'sawtooth',.25);tone(880,.3,'sawtooth',.2,.1);
+      speak('FOUR! What a shot!',{pitch:1.3,rate:1.1});
+      noiseBurst(1.2,.18); vibe([60,40,80]); break;
+    case 'run5':
+      tone(784,.25,'sawtooth',.25);tone(1046,.35,'sawtooth',.2,.1);
+      speak('Five runs!',{pitch:1.2}); vibe([50,30,50]); break;
+    case 'out':
+      tone(180,.4,'sawtooth',.3);tone(120,.5,'square',.25,.1);
+      speak('OUT! He is gone!',{pitch:.8,rate:.95});
+      noiseBurst(1.5,.2); vibe([100,50,100,50,200]); break;
+    case 'wide': tone(330,.2,'square',.18); speak('Wide ball'); vibe(50); break;
+    case 'nb': tone(294,.25,'square',.18); speak('No ball, free hit'); vibe([40,30,40]); break;
+    case 'undo': tone(400,.08);tone(300,.08,'sine',.2,.08); speak('Undo'); vibe(20); break;
+    case 'over': tone(659,.15);tone(784,.15,'sine',.2,.15); speak('Over completed'); vibe([30,20,30]); break;
+    case 'win':
+      [523,659,784,1046].forEach((f,i)=>tone(f,.3,'triangle',.25,i*.15));
+      speak('Match won! Congratulations!',{pitch:1.2}); noiseBurst(2,.2);
+      vibe([100,50,100,50,100,50,300]); break;
+  }
+}
+
+/* ---------- STATE ---------- */
+const DEFAULT={
+  tournament:'Short Pitch Cricket Cup',
+  team1:'Team A', team2:'Team B',
+  battingIdx:1, tossIdx:1,
+  target:0, totalOvers:6,
+  runs:0, wickets:0, balls:0, overs:0,
+  recent:[], started:false, finished:false,
+  history:[]
+};
+let S=load();
+function load(){
+  try{ const r=localStorage.getItem('eid_match'); return r?{...DEFAULT,...JSON.parse(r)}:{...DEFAULT}; }
+  catch(e){ return {...DEFAULT}; }
+}
+function save(){ localStorage.setItem('eid_match',JSON.stringify(S)); }
+
+let undoStack=[];
+function snapshot(){ undoStack.push(JSON.stringify({runs:S.runs,wickets:S.wickets,balls:S.balls,overs:S.overs,recent:[...S.recent],finished:S.finished})); if(undoStack.length>50)undoStack.shift(); }
+
+/* ---------- ADMIN ---------- */
+const CRED={user:'admin',pass:'1234'};
+let isAdmin=sessionStorage.getItem('eid_admin')==='1' || localStorage.getItem('eid_admin')==='1';
+
+/* ---------- DOM ---------- */
+const $=id=>document.getElementById(id);
+const battingTeamEl=$('battingTeam'),bowlingTeamEl=$('bowlingTeam');
+const scoreLed=$('scoreLed'),oversLed=$('oversLed');
+const statTarget=$('statTarget'),statReq=$('statReq'),statReqBalls=$('statReqBalls'),statRR=$('statRR');
+const recentEl=$('recentBalls'),statusBar=$('statusBar'),tossInfoEl=$('tossInfo'),tournamentEl=$('tournamentName');
+
+function render(){
+  const t1=S.team1||'Team A',t2=S.team2||'Team B';
+  const bat=S.battingIdx===1?t1:t2, bowl=S.battingIdx===1?t2:t1;
+  battingTeamEl.textContent=bat; bowlingTeamEl.textContent=bowl;
+  tournamentEl.textContent=S.tournament;
+  tossInfoEl.textContent='Toss: '+(S.tossIdx===1?t1:t2)+' won';
+  scoreLed.textContent=`${S.runs}/${S.wickets}`;
+  oversLed.textContent=`${S.overs}.${S.balls}`;
+  statTarget.textContent=S.target>0?S.target:'—';
+  if(S.target>0){
+    const need=Math.max(0,S.target-S.runs);
+    const totalBalls=S.totalOvers*6;
+    const bowled=S.overs*6+S.balls;
+    const left=Math.max(0,totalBalls-bowled);
+    statReq.textContent=need; statReqBalls.textContent=left;
+  }else{ statReq.textContent='—'; statReqBalls.textContent='—'; }
+  const totalBalls=(S.overs*6+S.balls);
+  statRR.textContent= totalBalls>0 ? ((S.runs/totalBalls)*6).toFixed(2) : '0.00';
+
+  // recent
+  recentEl.innerHTML='<span class="lbl">RECENT</span>';
+  S.recent.slice(-8).forEach(r=>{
+    const span=document.createElement('span');
+    span.className='pill '+(r==='W'?'W':r==='WD'?'WD':r==='NB'?'NB':'r'+r);
+    span.textContent=r;
+    recentEl.appendChild(span);
+  });
+
+  // status
+  statusBar.className='status-bar';
+  if(!S.started){ statusBar.textContent='Match not started — Admin can setup match'; }
+  else if(S.finished){
+    statusBar.classList.add(S._winSide==='bat'?'win':'lose');
+    statusBar.textContent=S._resultMsg||'Match ended';
+  }else if(S.target>0){
+    const need=S.target-S.runs;
+    const left=S.totalOvers*6-(S.overs*6+S.balls);
+    if(need<=0){ finishMatch('bat'); return render(); }
+    if(left<=0||S.wickets>=10){ finishMatch('bowl'); return render(); }
+    statusBar.textContent=`${bat} need ${need} runs from ${left} balls`;
+  }else{
+    statusBar.textContent=`${bat} batting — set target in setup`;
+  }
+
+  // controls
+  $('controls').classList.toggle('hidden',!isAdmin);
+  $('viewerNote').classList.toggle('hidden',isAdmin);
+}
+
+function finishMatch(side){
+  if(S.finished)return;
+  S.finished=true; S._winSide=side;
+  const bat=S.battingIdx===1?S.team1:S.team2;
+  const bowl=S.battingIdx===1?S.team2:S.team1;
+  let title,msg;
+  if(side==='bat'){
+    title=`${bat.toUpperCase()} WINS!`;
+    msg=`Won by ${10-S.wickets} wicket${(10-S.wickets)===1?'':'s'}`;
+  }else{
+    const margin=S.target-S.runs;
+    title=`${bowl.toUpperCase()} WINS!`;
+    msg= margin>0?`Won by ${margin} run${margin===1?'':'s'}`:`Match tied`;
+  }
+  S._resultMsg=`${title} — ${msg}`;
+  $('winTitle').textContent=title;
+  $('winMsg').textContent=msg;
+  $('winPop').classList.add('show');
+  flash('gold'); sfx('win');
+  // history
+  S.history.unshift({date:new Date().toLocaleString(),text:`${S.team1} vs ${S.team2}: ${title} (${msg}) — ${S.runs}/${S.wickets} in ${S.overs}.${S.balls}`});
+  S.history=S.history.slice(0,20);
+  save();
+}
+
+/* ---------- ACTIONS ---------- */
+function flash(kind='neon'){
+  const f=document.createElement('div');
+  f.className='fx-flash '+(kind==='gold'?'gold':kind==='red'?'red':'');
+  document.body.appendChild(f);
+  setTimeout(()=>f.remove(), kind==='red'?1200:500);
+}
+function toast(text,kind=''){
+  const t=document.createElement('div');
+  t.className='toast '+kind; t.textContent=text;
+  document.body.appendChild(t); setTimeout(()=>t.remove(),1800);
+}
+function bumpScore(){ scoreLed.classList.add('bump'); setTimeout(()=>scoreLed.classList.remove('bump'),250); }
+
+function ensureStarted(){
+  if(!S.started){ toast('Setup match first','red'); openModal('setupModal'); return false; }
+  if(S.finished){ toast('Match finished','red'); return false; }
+  return true;
+}
+
+function addRun(n){
+  if(!ensureStarted())return;
+  snapshot();
+  S.runs+=n;
+  S.recent.push(String(n));
+  bumpScore();
+  if(n===4){flash('neon');toast('FOUR!','');}
+  if(n===5||n===6){flash('gold');toast(n+' RUNS!','gold');}
+  sfx('run'+n);
+  save();render();
+}
+function addOut(){
+  if(!ensureStarted())return;
+  snapshot();
+  S.wickets+=1; S.recent.push('W');
+  flash('red'); toast('OUT!','red'); sfx('out');
+  if(S.wickets>=10){ /* let render finish */ }
+  save();render();
+}
+function addExtra(kind){
+  if(!ensureStarted())return;
+  snapshot();
+  S.runs+=1; S.recent.push(kind);
+  sfx(kind==='WD'?'wide':'nb');
+  toast(kind==='WD'?'WIDE +1':'NO BALL +1');
+  bumpScore();
+  save();render();
+}
+function addBall(){
+  if(!ensureStarted())return;
+  snapshot();
+  S.balls+=1;
+  if(S.balls>=6){ S.balls=0; S.overs+=1; sfx('over'); flash('neon'); toast('OVER COMPLETE','gold'); }
+  save();render();
+}
+function addOver(){
+  if(!ensureStarted())return;
+  snapshot();
+  S.overs+=1; S.balls=0;
+  sfx('over'); toast('+1 OVER','gold');
+  save();render();
+}
+function undo(){
+  if(!undoStack.length){ toast('Nothing to undo','red'); return; }
+  const prev=JSON.parse(undoStack.pop());
+  Object.assign(S,prev);
+  sfx('undo'); toast('UNDO');
+  save();render();
+}
+function resetMatch(){
+  if(!confirm('Reset entire match? This cannot be undone.'))return;
+  S={...DEFAULT,history:S.history,tournament:S.tournament,team1:S.team1,team2:S.team2,totalOvers:S.totalOvers};
+  undoStack=[]; save(); render(); toast('MATCH RESET','red');
+}
+
+/* ---------- MODALS ---------- */
+function openModal(id){ ac(); $(id).classList.add('show'); }
+function closeModal(id){ $(id).classList.remove('show'); }
+document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',e=>closeModal(b.dataset.close)));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('show'); }));
+
+/* ---------- LOGIN ---------- */
+$('adminBtn').addEventListener('click',()=>{
+  if(isAdmin){
+    $('loginErr').textContent='You are logged in';
+    $('doLogout').style.display='block';
+  }else{
+    $('loginErr').textContent=''; $('doLogout').style.display='none';
+  }
+  openModal('loginModal');
+});
+$('doLogin').addEventListener('click',()=>{
+  const u=$('loginUser').value.trim(), p=$('loginPass').value.trim();
+  if(u===CRED.user && p===CRED.pass){
+    isAdmin=true; localStorage.setItem('eid_admin','1');
+    $('loginErr').textContent=''; closeModal('loginModal');
+    toast('ADMIN LOGGED IN'); render();
+    if(!S.started) openModal('setupModal');
+  }else{
+    $('loginErr').textContent='Invalid credentials';
+  }
+});
+$('doLogout').addEventListener('click',()=>{
+  isAdmin=false; localStorage.removeItem('eid_admin'); closeModal('loginModal');
+  toast('LOGGED OUT','red'); render();
+});
+
+/* ---------- SETUP ---------- */
+function fillSetup(){
+  $('inTour').value=S.tournament; $('inT1').value=S.team1; $('inT2').value=S.team2;
+  $('inBat').value=S.battingIdx; $('inToss').value=S.tossIdx;
+  $('inTarget').value=S.target||''; $('inOvers').value=S.totalOvers||6;
+}
+$('btnSetup').addEventListener('click',()=>{ fillSetup(); openModal('setupModal'); });
+$('doSetup').addEventListener('click',()=>{
+  S.tournament=$('inTour').value.trim()||'Short Pitch Cricket Cup';
+  S.team1=$('inT1').value.trim()||'Team A';
+  S.team2=$('inT2').value.trim()||'Team B';
+  S.battingIdx=parseInt($('inBat').value);
+  S.tossIdx=parseInt($('inToss').value);
+  S.target=parseInt($('inTarget').value)||0;
+  S.totalOvers=parseInt($('inOvers').value)||6;
+  S.runs=0;S.wickets=0;S.balls=0;S.overs=0;S.recent=[];S.started=true;S.finished=false;S._resultMsg='';
+  undoStack=[]; save(); closeModal('setupModal'); render();
+  toast('MATCH STARTED','gold'); flash('gold');
+});
+
+/* ---------- HISTORY ---------- */
+$('histBtn').addEventListener('click',()=>{
+  const list=$('histList');
+  if(!S.history||!S.history.length){ list.innerHTML='<div class="hist-item"><span>No history yet</span></div>'; }
+  else list.innerHTML=S.history.map(h=>`<div class="hist-item"><span>${h.text}</span><span class="t">${h.date}</span></div>`).join('');
+  openModal('histModal');
+});
+$('clearHist').addEventListener('click',()=>{ S.history=[]; save(); $('histList').innerHTML='<div class="hist-item"><span>No history yet</span></div>'; });
+
+/* ---------- FULLSCREEN ---------- */
+$('fsBtn').addEventListener('click',()=>{
+  if(!document.fullscreenElement){ document.documentElement.requestFullscreen?.(); }
+  else document.exitFullscreen?.();
+});
+
+/* ---------- WIRE BUTTONS ---------- */
+document.querySelectorAll('[data-run]').forEach(b=>b.addEventListener('click',()=>addRun(parseInt(b.dataset.run))));
+$('btnOut').addEventListener('click',addOut);
+$('btnWide').addEventListener('click',()=>addExtra('WD'));
+$('btnNB').addEventListener('click',()=>addExtra('NB'));
+$('btnBall').addEventListener('click',addBall);
+$('btnOver').addEventListener('click',addOver);
+$('btnUndo').addEventListener('click',undo);
+$('btnReset').addEventListener('click',resetMatch);
+$('winClose').addEventListener('click',()=>$('winPop').classList.remove('show'));
+$('loginHint').addEventListener('click',()=>$('adminBtn').click());
+
+/* ---------- BOOT ---------- */
+window.addEventListener('load',()=>{ setTimeout(()=>$('loader').classList.add('hide'),900); render(); });
+document.addEventListener('click',()=>ac(),{once:true});
+</script>
+</body>
+</html>
